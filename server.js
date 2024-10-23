@@ -20,11 +20,34 @@ app.use(express.json()); //json 형식의 데이터를 처리할 수 있게 설�
 app.use(cors()); //브라우저의 CORS 이슈를 막기 위해 사용하는 코드
 app.use("/upload", express.static("upload"));
 
+app.get("/banners", (req, res) => {
+  models.Banner.findAll({
+    limit: 2,
+  })
+    .then(function (result) {
+      res.send({
+        banners: result,
+      });
+    })
+    .catch(function (error) {
+      console.error(error);
+      res.status(500).send("에러가 발생했습니다.");
+    });
+});
+
 app.get("/products", async (req, res) => {
   models.Product.findAll({
     limit: 100,
     order: [["createdAt", "DESC"]],
-    attributes: ["id", "name", "price", "createdAt", "seller", "imageUrl"],
+    attributes: [
+      "id",
+      "name",
+      "price",
+      "createdAt",
+      "seller",
+      "imageUrl",
+      "soldout",
+    ],
   })
     .then((result) => {
       console.log("PRODUCTS : ", result);
@@ -64,6 +87,29 @@ app.post("/products", async (req, res) => {
     });
 });
 
+app.post("/purchase/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await models.Product.update(
+      {
+        soldout: 1, // 결제 완료로 설정
+      },
+      {
+        where: { id },
+      }
+    );
+
+    if (result[0] === 0) {
+      return res.status(404).send("해당 상품을 찾을 수 없습니다.");
+    }
+
+    res.send({ result: true });
+  } catch (error) {
+    console.error("구매 처리 중 에러 발생:", error);
+    res.status(500).send("서버 내부 오류가 발생했습니다.");
+  }
+});
+
 app.get("/products/:id", async (req, res) => {
   const param = req.params;
   const { id } = param;
@@ -95,7 +141,7 @@ app.post("/image", upload.single("image"), (req, res) => {
 app.listen(port, () => {
   console.log("쇼핑몰 서버가 돌아가고 있습니다.");
   models.sequelize
-    .sync()
+    .sync({ alter: true }) // 변경된 모델 스키마에 따라 테이블을 업데이트
     .then(() => {
       console.log("✓ DB 연결 성공");
     })
