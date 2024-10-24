@@ -173,6 +173,26 @@ app.put("/products/:id", async (req, res) => {
   }
 });
 
+app.delete("/products/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await models.Product.destroy({
+      where: { id },
+    });
+
+    if (result === 0) {
+      return res.status(404).send("해당 상품을 찾을 수 없습니다.");
+    }
+
+    res.send({
+      result: "상품이 성공적으로 삭제되었습니다.",
+    });
+  } catch (error) {
+    console.error("상품 삭제 중 에러 발생:", error);
+    res.status(500).send("서버 내부 오류가 발생했습니다.");
+  }
+});
+
 //세팅한 app을 실행시킨다.
 app.listen(port, () => {
   console.log("쇼핑몰 서버가 돌아가고 있습니다.");
