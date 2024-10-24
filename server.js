@@ -137,6 +137,42 @@ app.post("/image", upload.single("image"), (req, res) => {
   });
 });
 
+app.put("/products/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, seller, imageUrl, soldout } = req.body;
+
+  if (!name || !description || !price || !seller || !imageUrl) {
+    return res.status(400).send("모든 필드를 입력해주세요");
+  }
+
+  try {
+    const result = await models.Product.update(
+      {
+        name,
+        description,
+        price,
+        seller,
+        imageUrl,
+        soldout,
+      },
+      {
+        where: { id },
+      }
+    );
+
+    if (result[0] === 0) {
+      return res.status(404).send("해당 상품을 찾을 수 없습니다.");
+    }
+
+    res.send({
+      result: "상품이 성공적으로 업데이트되었습니다.",
+    });
+  } catch (error) {
+    console.error("상품 업데이트 중 에러 발생:", error);
+    res.status(500).send("서버 내부 오류가 발생했습니다.");
+  }
+});
+
 //세팅한 app을 실행시킨다.
 app.listen(port, () => {
   console.log("쇼핑몰 서버가 돌아가고 있습니다.");
